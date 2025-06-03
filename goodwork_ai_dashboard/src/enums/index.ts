@@ -1,4 +1,4 @@
-// 数据处理常量
+// Data processing constants
 export const METRICS = {
   SALES: 'sales',
   ASP: 'asp',
@@ -10,7 +10,7 @@ export const COMPARISON_TYPES = {
   COMPARISON: 'comparison',
 } as const
 
-// 导出类型
+// Export types
 export type MetricsType = (typeof METRICS)[keyof typeof METRICS]
 export type ComparisonType =
   (typeof COMPARISON_TYPES)[keyof typeof COMPARISON_TYPES]

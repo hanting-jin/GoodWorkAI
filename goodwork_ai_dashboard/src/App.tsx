@@ -1,105 +1,101 @@
-import { useState, useMemo } from 'react'
 import './App.css'
-import { useDataLoader } from './hooks/useDataLoader'
-import { processData, getUniqueValues } from './utils'
-import { FilterControls } from './components/FilterControls'
-import { SalesDashboard } from './components/SalesDashboard'
-import { LoadingSpinner } from './components/LoadingSpinner'
-import { ErrorMessage } from './components/ErrorMessage'
+import { useEffect, useState } from 'react'
+import Papa from 'papaparse'
+import type { RawData } from './types'
+import { SalesDashboard, LoadingSpinner, ErrorMessage } from './components'
 
 function App() {
-  const { data: rawData, loading, error } = useDataLoader()
-  const [selectedBanner, setSelectedBanner] = useState('ALL')
-  const [selectedPackSize, setSelectedPackSize] = useState('ALL')
+  const [rawData, setRawData] = useState<RawData[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // 计算过滤器选项
-  const bannerOptions = useMemo(() => {
-    if (rawData.length === 0) return ['ALL']
-    return getUniqueValues(rawData, 'banner')
-  }, [rawData])
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true)
+        setError(null)
 
-  const packSizeOptions = useMemo(() => {
-    if (rawData.length === 0) return ['ALL']
-    return getUniqueValues(rawData, 'pack_size')
-  }, [rawData])
+        // Fetch CSV file
+        const response = await fetch(
+          '/dashboardData/dummy_trend_table_take_home.csv'
+        )
+        if (!response.ok) {
+          throw new Error('Failed to fetch data file')
+        }
 
-  // 处理和过滤数据
-  const processedData = useMemo(() => {
-    if (rawData.length === 0) return []
-    return processData(rawData, selectedBanner, selectedPackSize)
-  }, [rawData, selectedBanner, selectedPackSize])
+        const csvText = await response.text()
 
-  // 处理加载状态
+        // Parse CSV data
+        const parseResult = await new Promise<Papa.ParseResult<any>>(
+          (resolve, reject) => {
+            Papa.parse(csvText, {
+              header: true,
+              skipEmptyLines: true,
+              complete: resolve,
+              error: reject,
+            })
+          }
+        )
+
+        // Process parsed data - using any for CSV parsing flexibility
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const parsed: RawData[] = parseResult.data.map((row: any) => ({
+          article_id: row.article_id,
+          banner: row.banner,
+          pack_size: row.pack_size,
+          fiscal_week: Number(row.fiscal_week),
+          start_date: row.start_date,
+          end_date: row.end_date,
+          metrics: row.metrics,
+          comparison: row.comparison,
+          // Keep other fields as string, convert later in processing
+          value: row.value,
+        }))
+
+        // Filter out invalid rows and set data
+        const validData = parsed.filter(row => !isNaN(row.fiscal_week))
+        setRawData(validData)
+      } catch (error: any) {
+        console.error('Data loading failed:', error)
+        setError(
+          error instanceof Error ? error.message : 'Unknown error occurred'
+        )
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadData()
+  }, [])
+
+  // Handle loading state
   if (loading) {
     return <LoadingSpinner />
   }
 
-  // 处理错误状态
+  // Handle error state
   if (error) {
     return <ErrorMessage message={error} />
   }
 
-  // 处理无数据状态
+  // Handle no data state
   if (rawData.length === 0) {
-    return <ErrorMessage message="没有找到数据文件，请检查数据是否正确加载。" />
+    return (
+      <ErrorMessage message="No data file found. Please check if the data is loaded correctly." />
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            GoodWork.ai 销售仪表盘
-          </h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Weekly Sales Dashboard - 销售表现与趋势分析
-          </p>
+    <div className="min-h-screen w-full bg-gray-50">
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-6">
+          <h1 className="text-3xl font-bold text-gray-900">GoodWork.AI</h1>
+          <p className="mt-2 text-sm text-gray-600">Weekly Sales Dashboard</p>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {/* 过滤器控件 */}
-        <FilterControls
-          bannerOptions={bannerOptions}
-          packSizeOptions={packSizeOptions}
-          selectedBanner={selectedBanner}
-          selectedPackSize={selectedPackSize}
-          onBannerChange={setSelectedBanner}
-          onPackSizeChange={setSelectedPackSize}
-        />
-
-        {/* 数据统计信息 */}
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">总数据行数</h3>
-            <p className="text-2xl font-bold text-gray-900">
-              {rawData.length.toLocaleString()}
-            </p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">筛选后周数</h3>
-            <p className="text-2xl font-bold text-gray-900">
-              {processedData.length}
-            </p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">当前过滤器</h3>
-            <p className="text-sm text-gray-900">
-              {selectedBanner} / {selectedPackSize}
-            </p>
-          </div>
-        </div>
-
-        {/* 仪表盘图表 */}
-        {processedData.length > 0 ? (
-          <SalesDashboard data={processedData} />
-        ) : (
-          <div className="bg-white p-8 rounded-lg shadow text-center">
-            <p className="text-gray-500 text-lg">
-              当前过滤条件下没有数据，请尝试调整过滤器设置。
-            </p>
-          </div>
-        )}
+      <main className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+        <SalesDashboard rawData={rawData} />
       </main>
     </div>
   )

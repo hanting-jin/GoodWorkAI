@@ -1,10 +1,18 @@
-import type { RawDataRow } from '../types'
-
-// 获取唯一的过滤器选项
-export function getUniqueValues(
-  data: RawDataRow[],
-  field: keyof RawDataRow
+// Get unique filter options with all option
+export function getUniqueValues<T extends Record<string, any>>(
+  data: T[],
+  key: keyof T
 ): string[] {
-  const values = new Set(data.map(row => row[field] as string))
-  return ['ALL', ...Array.from(values).sort()]
+  const set = new Set<string>()
+  data.forEach(row => {
+    if (row[key] !== undefined && row[key] !== null) {
+      const value = String(row[key]).toLowerCase()
+      // Skip any existing variations of "all"
+      if (value !== 'all') {
+        set.add(String(row[key]))
+      }
+    }
+  })
+  const uniqueValues = Array.from(set).sort()
+  return ['all', ...uniqueValues]
 }

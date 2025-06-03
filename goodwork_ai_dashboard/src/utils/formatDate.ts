@@ -1,18 +1,10 @@
-// 格式化日期
-export function formatDate(dateString: string): string {
-  try {
-    const parts = dateString.split('/')
-    if (parts.length === 3) {
-      // 假设格式是 DD/MM/YYYY
-      const [day, month, year] = parts
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      })
-    }
-    return dateString
-  } catch {
-    return dateString
-  }
+// Format date
+export function formatDate(dateStr: string): string {
+  // Assume format is DD/MM/YYYY
+  const [day, month, year] = dateStr.split('/')
+  const date = new Date(Number(year), Number(month) - 1, Number(day))
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: '2-digit',
+  })
 }

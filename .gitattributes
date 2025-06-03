@@ -1,0 +1,14 @@
+# 设置默认行尾为 CRLF
+* text=auto eol=crlf
+
+# 确保这些文件始终使用 CRLF
+*.ts text eol=crlf
+*.tsx text eol=crlf
+*.js text eol=crlf
+*.jsx text eol=crlf
+*.json text eol=crlf
+*.css text eol=crlf
+*.html text eol=crlf
+*.md text eol=crlf
+*.yml text eol=crlf
+*.yaml text eol=crlf

@@ -1,8 +1,8 @@
-// 数据清理和转换函数
-export function parseValue(value: string | number): number | null {
-  if (value === 'NA' || value === '' || value === null || value === undefined) {
-    return null
-  }
-  const numValue = typeof value === 'string' ? parseFloat(value) : value
-  return isNaN(numValue) ? null : numValue
+// Data cleaning and conversion function
+export function parseValue(val: string | number | null): number | null {
+  if (val === null || val === undefined) return null
+  if (typeof val === 'number') return val
+  if (val === 'NA' || val === '') return null
+  const num = Number(val)
+  return isNaN(num) ? null : num
 }
