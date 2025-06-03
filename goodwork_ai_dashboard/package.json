@@ -15,16 +15,16 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.8",
-    "dayjs": "^1.11.13",
+    "papaparse": "^5.4.1",
     "plotly.js": "^3.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-papaparse": "^4.4.0",
     "react-plotly.js": "^2.6.0",
     "tailwindcss": "^4.1.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
+    "@types/papaparse": "^5.3.14",
     "@types/plotly.js": "^3.0.0",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
