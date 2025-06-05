@@ -1,54 +1,61 @@
-# React + TypeScript + Vite
+# Sales Dashboard Implementation Approach
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 1. Clarify the Requirements
 
-Currently, two official plugins are available:
+- Recreate the simple chart with description
+- Solve the Imperfect Data issues
+- Review the data table
+  - 1. Understand the content of data (table headers)
+  - 2. Notice some N/A, 0, and missing weeks in the data which need to be handled in the chart
+- Read the Plotly library documentation and ask LLM questions and examples about how to use it
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 2. Issues Encountered in the First Stage
 
-## Expanding the ESLint configuration
+- Noticed imperfect data, but needed more information about the data usage, so asked AI questions to understand more about the data
+- Searched for basic concepts about data analysis
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 3. Technology Decisions for Solving This Problem
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+- React as required for building the chart
+- Tailwind for styling the project
+- TypeScript for handling data types and reducing bugs
+- PapaParse for reading the CSV file and converting CSV data to TypeScript types
+- React-Plotly.js for building charts
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 4. Codebase Overview
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. The page root is in App.tsx, where data conversion from CSV to JSON happens. After data processing, the data is passed to the child component `<SalesDashboard/>`
+2. The components folder includes:
+   - Reusable component `<Chart/>`
+   - Status management components `<ErrorMessage/>` and `<LoadingSpinner/>`
+   - Core component `<SalesDashboard/>` for chart rendering
+3. The Utils folder includes reusable functions for formatting dates, numbers, etc.
+4. Enums for filter options
+5. Types for data types
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+## 5. Handling Imperfect Data
+
+The dataset contains several data quality issues that were addressed:
+
+1. **Missing Values (NA)**
+
+   - Parsed as `null` in JavaScript
+   - Plotly handles null values gracefully by creating gaps in lines
+   - No interpolation was applied to maintain data integrity
+
+2. **Zero Values**
+
+   - Preserved as-is since zeros might represent legitimate business periods (e.g., no sales during certain weeks)
+   - Distinguished from missing data (NA) to maintain business meaning
+
+3. **Missing Weeks**
+
+   - All fiscal weeks (1-53) are initialized to ensure consistent x-axis alignment
+   - Data is sorted by fiscal_week to ensure chronological order
+   - Final result includes only weeks with actual data to avoid excessive empty periods
+   - This solves the "half chart" issue where different charts show different time ranges
+
+4. **Data Filtering**
+   - Filters work independently (banner AND pack_size)
+   - "ALL" option aggregates data across all values for that dimension
+   - Graceful handling when no data matches filter criteria
