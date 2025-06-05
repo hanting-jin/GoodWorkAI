@@ -38,7 +38,6 @@ function App() {
         )
 
         // Process parsed data - using any for CSV parsing flexibility
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const parsed: RawData[] = parseResult.data.map((row: any) => ({
           article_id: row.article_id,
           banner: row.banner,

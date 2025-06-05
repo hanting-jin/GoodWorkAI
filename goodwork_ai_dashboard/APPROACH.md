@@ -1,197 +1,61 @@
-# 销售仪表板实现方法与假设
+# Sales Dashboard Implementation Approach
 
-## 项目概述
+## 1. Clarify the Requirements
 
-本项目使用 React + TypeScript + Plotly.js 构建了一个销售数据可视化仪表板，用于分析周销售表现和趋势。
+- Recreate the simple chart with description
+- Solve the Imperfect Data issues
+- Review the data table
+  - 1. Understand the content of data (table headers)
+  - 2. Notice some N/A, 0, and missing weeks in the data which need to be handled in the chart
+- Read the Plotly library documentation and ask LLM questions and examples about how to use it
 
-## 技术栈
+## 2. Issues Encountered in the First Stage
 
-- **前端框架**: React 19 + TypeScript
-- **图表库**: react-plotly.js + plotly.js
-- **样式**: Tailwind CSS
-- **数据处理**: PapaParse (CSV解析)
-- **构建工具**: Vite
+- Noticed imperfect data, but needed more information about the data usage, so asked AI questions to understand more about the data
+- Searched for basic concepts about data analysis
 
-## 架构设计
+## 3. Technology Decisions for Solving This Problem
 
-### 1. 组件结构
+- React as required for building the chart
+- Tailwind for styling the project
+- TypeScript for handling data types and reducing bugs
+- PapaParse for reading the CSV file and converting CSV data to TypeScript types
+- React-Plotly.js for building charts
 
-```
-src/
-├── components/
-│   ├── FilterControls.tsx      # 过滤器控件
-│   ├── SalesDashboard.tsx      # 主要图表组件
-│   ├── LoadingSpinner.tsx      # 加载状态
-│   └── ErrorMessage.tsx        # 错误显示
-├── hooks/
-│   └── useDataLoader.ts        # 数据加载Hook
-├── utils/
-│   └── dataProcessor.ts        # 数据处理工具
-└── App.tsx                     # 主应用组件
-```
+## 4. Codebase Overview
 
-### 2. 数据流
+1. The page root is in App.tsx, where data conversion from CSV to JSON happens. After data processing, the data is passed to the child component `<SalesDashboard/>`
+2. The components folder includes:
+   - Reusable component `<Chart/>`
+   - Status management components `<ErrorMessage/>` and `<LoadingSpinner/>`
+   - Core component `<SalesDashboard/>` for chart rendering
+3. The Utils folder includes reusable functions for formatting dates, numbers, etc.
+4. Enums for filter options
+5. Types for data types
 
-1. **数据加载**: `useDataLoader` Hook 负责从 CSV 文件加载原始数据
-2. **数据处理**: `dataProcessor` 将原始数据转换为图表所需格式
-3. **状态管理**: 使用 React useState 管理过滤器状态
-4. **图表渲染**: `SalesDashboard` 组件使用 Plotly.js 渲染图表
+## 5. Handling Imperfect Data
 
-## 实现的功能
+The dataset contains several data quality issues that were addressed:
 
-### 1. 双图表布局
+1. **Missing Values (NA)**
 
-#### 上部图表：销售额与平均售价
+   - Parsed as `null` in JavaScript
+   - Plotly handles null values gracefully by creating gaps in lines
+   - No interpolation was applied to maintain data integrity
 
-- **柱状图**: Sales TY (蓝色) 和 Sales LY (红色)
-- **折线图**: ASP TY (蓝色实线) 和 ASP LY (橙色虚线)
-- **双Y轴**: 左侧显示销售额，右侧显示平均售价
+2. **Zero Values**
 
-#### 下部图表：毛利率趋势
+   - Preserved as-is since zeros might represent legitimate business periods (e.g., no sales during certain weeks)
+   - Distinguished from missing data (NA) to maintain business meaning
 
-- **折线图**: GP% TY (绿色实线) 和 GP% LY (粉色虚线)
-- **单Y轴**: 百分比格式显示毛利率
+3. **Missing Weeks**
 
-### 2. 交互功能
+   - All fiscal weeks (1-53) are initialized to ensure consistent x-axis alignment
+   - Data is sorted by fiscal_week to ensure chronological order
+   - Final result includes only weeks with actual data to avoid excessive empty periods
+   - This solves the "half chart" issue where different charts show different time ranges
 
-#### 过滤器
-
-- **Banner**: 渠道过滤 (ALL, dm, bws 等)
-- **Pack Size**: 包装规格过滤 (ALL, case, each, multipack 等)
-- **实时更新**: 过滤器变更时图表自动更新
-
-#### 悬停提示
-
-- **格式化显示**: 货币、百分比等正确格式
-- **周信息**: 显示财政周和截止日期
-- **中英文标签**: 用户友好的提示信息
-
-### 3. 响应式设计
-
-- **移动适配**: 使用 Tailwind CSS 实现响应式布局
-- **图表自适应**: Plotly 配置为响应式图表
-
-## 数据处理假设和决策
-
-### 1. 缺失数据处理
-
-**问题**: 数据中存在 "NA" 值和缺失的周数据
-
-**解决方案**:
-
-- 将 "NA" 字符串转换为 `null`
-- 在图表中，`null` 值会自动跳过，不显示连接线
-- 保持数据的完整性，不进行插值填充
-
-**理由**: 显示数据间断比填充虚假数据更诚实，让用户了解真实的数据情况
-
-### 2. 零值处理
-
-**问题**: 销售数据中存在连续的零值（如第27-31周）
-
-**解决方案**:
-
-- 保留零值，在图表中显示为0
-- 不将零值视为缺失数据
-
-**理由**: 零值可能代表真实的业务情况（如季节性停售、库存清空等）
-
-### 3. 日期格式化
-
-**问题**: 原始数据中的日期格式为 "DD/MM/YYYY"
-
-**解决方案**:
-
-- 解析日期字符串并格式化为 "Mon DD" 格式
-- 使用 `end_date` 作为 X 轴标签
-
-**理由**: 简化 X 轴显示，避免标签重叠，提高可读性
-
-### 4. 数据分组和聚合
-
-**问题**: 原始数据为长格式，需要按周聚合不同指标
-
-**解决方案**:
-
-- 按 `fiscal_week` 分组
-- 将 `sales`、`asp`、`gp_percent` 的 `focus` 和 `comparison` 值合并到同一行
-- 使用 Map 数据结构确保高效查找和更新
-
-### 5. 过滤器逻辑
-
-**问题**: 用户需要能够按不同维度过滤数据
-
-**解决方案**:
-
-- 提供 "ALL" 选项显示所有数据
-- 支持单维度和多维度组合过滤
-- 过滤发生在数据处理阶段，确保性能
-
-## 性能优化
-
-### 1. 数据处理优化
-
-- 使用 `useMemo` 缓存处理后的数据
-- 避免不必要的重新计算
-
-### 2. 组件优化
-
-- 将数据处理逻辑分离到工具函数
-- 使用自定义 Hook 管理副作用
-
-### 3. 图表配置
-
-- 启用 Plotly 的响应式模式
-- 优化悬停提示的性能
-
-## 用户体验设计
-
-### 1. 加载状态
-
-- 显示加载动画，提供即时反馈
-- 错误处理，友好的错误消息
-
-### 2. 数据展示
-
-- 统计卡片显示关键信息
-- 清晰的图表标题和轴标签
-- 一致的颜色方案
-
-### 3. 交互反馈
-
-- 过滤器变更的即时响应
-- 悬停提示的详细信息
-- 空状态的友好提示
-
-## 可扩展性考虑
-
-### 1. 代码结构
-
-- 模块化组件设计
-- 类型安全的 TypeScript 接口
-- 可重用的工具函数
-
-### 2. 数据适配
-
-- 灵活的数据处理管道
-- 易于添加新的指标和过滤器
-- 支持不同的数据源
-
-### 3. 图表配置
-
-- 可配置的图表样式
-- 支持导出功能
-- 易于添加新的图表类型
-
-## 已知限制
-
-1. **数据量**: 当前实现适合中等规模数据，大数据集可能需要虚拟化
-2. **实时更新**: 目前为静态数据，需要手动刷新获取新数据
-3. **浏览器兼容性**: 依赖现代浏览器的 ES2015+ 特性
-
-## 未来改进方向
-
-1. **数据源**: 支持 API 数据源和实时更新
-2. **更多图表**: 添加趋势预测、同比分析等
-3. **导出功能**: 支持 PDF、Excel 等格式导出
-4. **个性化**: 用户自定义图表配置和保存视图
+4. **Data Filtering**
+   - Filters work independently (banner AND pack_size)
+   - "ALL" option aggregates data across all values for that dimension
+   - Graceful handling when no data matches filter criteria
